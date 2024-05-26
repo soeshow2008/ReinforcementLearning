@@ -5,28 +5,32 @@ import random;
 import time;
 import matplotlib.pyplot as plt;
 from matplotlib.animation import FuncAnimation;
+import tensorflow as tf;
 
-env = gym.make('FrozenLake-v1', desc=None, map_name="8x8", is_slippery=False, render_mode="rgb_array");
+env = gym.make('FrozenLake-v1', desc=None, map_name="4x4", is_slippery=False, render_mode="rgb_array");
 #env = gym.make('FrozenLake-v1', desc=None, map_name="8x8", is_slippery=False, render_mode="human");
 
 lr = 0.5; #learning rate
 y = 0.9; #discount factor lambda
 
-Q_table = np.random.uniform(0., 0.00001, [env.observation_space.n, env.action_space.n]);
+embedding_dim = 4;
+model = tf.keras.models.Sequential(
+        [tf.keras.layers.Embedding(input_dim=env.observation_space.n, output_dim=embedding_dim),
+         tf.keras.layers.Flatten(),
+         tf.keras.layers.Dense(env.action_space.n)]);
+optimizer = tf.keras.optimizers.Adam(learning_rate=0.01);
+model.compile(optimizer=optimizer, loss='mse');
 
-def epsilon_greedy(Q_table, observation):
-    p = random.random();
-    if p > 0.3:
-        return np.argmax(Q_table[observation, :]);
-    else:
-        return env.action_space.sample();
-
-for idx in range(10000):
+for idx in range(100):
     observation, info = env.reset();
-    if idx % 1000 == 1:
-        print("eps", idx);
+    print("eps", idx);
     while True:
-        action = epsilon_greedy(Q_table, observation);
+        input_feature = np.array([[observation]]);
+        predictions = model.predict(input_feature);
+        if random.random() > 0.3:
+            action = predictions[0].argmax();
+        else:
+            action = env.action_space.sample();
         observation_, reward, terminated, truncated, info = env.step(action);
         done = terminated;
         r_ = -1;
@@ -35,15 +39,19 @@ for idx in range(10000):
                 r_ = 100000; # win
             else:
                 r_ = -100000; # lost
-            Q_table[observation_] = np.ones(env.action_space.n) * r_;
         if observation_ == observation:
             r_ = -100;
-        Q_table[observation, action] = Q_table[observation, action] + lr * (r_ + y * np.max(Q_table[observation_, :]) - Q_table[observation, action]);
+        # scalered
+        r_ = r_ / 10000.0;
+        input_feature_ = np.array([[observation_]]);
+        predictions_ = model.predict(input_feature_);
+        predictions[0][action] = predictions[0][action] + lr * (r_ + y * np.max(predictions_[0]) - predictions[0][action]);
+        #
+        model.fit(input_feature, predictions, epochs=1);
+        #
         observation = observation_;
         if done:
             break;
-print("Q_table", Q_table);
-
 #
 images = [];
 def add_image(images):
@@ -55,7 +63,9 @@ observation, info = env.reset();
 add_image(images);
 
 while True:
-    action = np.argmax(Q_table[observation, :]);
+    input_feature = np.array([[observation]]);
+    predictions = model.predict(input_feature);
+    action = predictions[0].argmax();
     observation, reward, terminated, truncated, info = env.step(action);
     add_image(images);
     if terminated or truncated:
