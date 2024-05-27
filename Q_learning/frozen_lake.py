@@ -23,6 +23,7 @@ def epsilon_greedy(Q_table, observation):
 
 for idx in range(10000):
     observation, info = env.reset();
+    last_action = -1;
     if idx % 1000 == 1:
         print("eps", idx);
     while True:
@@ -35,11 +36,13 @@ for idx in range(10000):
                 r_ = 100000; # win
             else:
                 r_ = -100000; # lost
-            Q_table[observation_] = np.ones(env.action_space.n) * r_;
         if observation_ == observation:
             r_ = -100;
+        if r_ == -1 and last_action != -1 and last_action != action:
+            r_ = -10;
         Q_table[observation, action] = Q_table[observation, action] + lr * (r_ + y * np.max(Q_table[observation_, :]) - Q_table[observation, action]);
         observation = observation_;
+        last_action = action;
         if done:
             break;
 print("Q_table", Q_table);
