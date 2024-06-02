@@ -1,6 +1,8 @@
 book: <Reinforcement Learning with TensorFlow>
 code: https://github.com/packtpublishing/reinforcement-learning-with-tensorflow
 gym dev: https://www.gymlibrary.dev/
+Gymnasium[开源社区]: https://gymnasium.farama.org/#
+
 cn book: https://github.com/apachecn/apachecn-dl-zh/tree/master/docs/rl-tf
 cn book2: https://dl.apachecn.org/#/docs/rl-tf/README
 
