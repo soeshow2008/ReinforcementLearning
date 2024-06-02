@@ -5,9 +5,12 @@ import random;
 import time;
 import matplotlib.pyplot as plt;
 from matplotlib.animation import FuncAnimation;
+from gym.envs.toy_text.frozen_lake import generate_random_map;
 
-env = gym.make('FrozenLake-v1', desc=None, map_name="8x8", is_slippery=False, render_mode="rgb_array");
+#env = gym.make('FrozenLake-v1', desc=None, map_name="8x8", is_slippery=False, render_mode="rgb_array");
 #env = gym.make('FrozenLake-v1', desc=None, map_name="8x8", is_slippery=False, render_mode="human");
+env = gym.make('FrozenLake-v1', desc=generate_random_map(size=16), is_slippery=False, render_mode="rgb_array");
+
 
 lr = 0.5; #learning rate
 y = 0.9; #discount factor lambda
