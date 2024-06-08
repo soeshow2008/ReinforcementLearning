@@ -17,7 +17,6 @@ print(s);
 env.render();
 sys.exit(0);
 
-#env = gym.make('FrozenLake-v1', desc=None, map_name="8x8", is_slippery=False, render_mode="human");
 
 lr = 0.5; #learning rate
 y = 0.9; #discount factor lambda

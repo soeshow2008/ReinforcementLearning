@@ -1,11 +1,13 @@
 import time;
-import gym; 
+#import gym; 
+import gymnasium as gym; 
 import numpy as np;
 import random;
 import time;
 import matplotlib.pyplot as plt;
 from matplotlib.animation import FuncAnimation;
-from gym.envs.toy_text.frozen_lake import generate_random_map;
+#from gym.envs.toy_text.frozen_lake import generate_random_map;
+from gymnasium.envs.toy_text.frozen_lake import generate_random_map;
 
 #env = gym.make('FrozenLake-v1', desc=None, map_name="8x8", is_slippery=False, render_mode="rgb_array");
 #env = gym.make('FrozenLake-v1', desc=None, map_name="8x8", is_slippery=False, render_mode="human");
