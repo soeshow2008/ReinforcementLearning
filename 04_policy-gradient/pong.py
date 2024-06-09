@@ -4,6 +4,7 @@ import keras
 from keras import ops
 from keras import layers
 from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten
+from tensorflow.keras.models import load_model
 import tensorflow as tf
 import sys
 import gymnasium as gym 
@@ -13,6 +14,7 @@ import time
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
+np.set_printoptions(threshold=sys.maxsize);
 # Configuration parameters for the whole setup
 seed = 42
 gamma = 0.99  # Discount factor for past rewards
@@ -22,15 +24,34 @@ env = gym.make("ALE/Pong-v5", render_mode="rgb_array")
 env.seed(seed)
 eps = np.finfo(np.float32).eps.item()  # Smallest number such that 1.0 + eps != 1.0
 
+def preprocess(image):
+    image = image[35:195]   
+    image = image[::2,::2,0]
+    image[image==144] = 0
+    image[image==109] = 0
+    image[image!=0] = 1.0
+    #return image
+    return image.astype('float').ravel()
+
 # Actor-Critiic, TD
-inputs = layers.Input(shape=env.observation_space.shape) 
-common = Conv2D(32, (3, 3), activation='relu')(inputs)
-common = MaxPooling2D(pool_size=(2, 2))(common)
-common = Flatten()(common);
+# cnn
+#inputs = layers.Input(shape=(80, 80, 1)) 
+#common = Conv2D(4, (3, 3), activation='relu')(inputs)
+#common = MaxPooling2D(pool_size=(2, 2))(common)
+#common = Conv2D(8, (3, 3), activation='relu')(common)
+#common = MaxPooling2D(pool_size=(2, 2))(common)
+#common = Flatten()(common);
+
+# liner
+inputs = layers.Input(shape=(80*80,))
+common = layers.Dense(128, activation="relu")(inputs)
+common = layers.Dense(64, activation="relu")(common)
+
 action = layers.Dense(env.action_space.n, activation="softmax")(common)
 critic = layers.Dense(1)(common)
 
 model = keras.Model(inputs=inputs, outputs=[action, critic])
+#model = load_model("./models/model.{}.h5".format(sys.argv[1]))
 # Train
 optimizer = keras.optimizers.Adam(learning_rate=0.01)
 huber_loss = keras.losses.Huber()
@@ -40,9 +61,12 @@ rewards_history = []
 running_reward = 0
 episode_count = 0
 
+print(model.summary())
+
 while True:  # Run until solved
+    episode_begin = True
     state, _ = env.reset()
-    state = state / 255.0
+    state = preprocess(state)
     episode_reward = 0
     with tf.GradientTape() as tape:
         for timestep in range(1, max_steps_per_episode):
@@ -59,13 +83,19 @@ while True:  # Run until solved
 
             # Sample action from action probability distribution
             action = np.random.choice(env.action_space.n, p=np.squeeze(action_probs))
+            if episode_begin and episode_count % 5 == 0:
+                print(action, action_probs)
             action_probs_history.append(ops.log(action_probs[0, action]))
 
             # Apply the sampled action in our environment
             state, reward, done, _, _ = env.step(action)
-            state = state / 255.0
+            state = preprocess(state)
+            if reward != 0:
+                print("reward", reward, done, flush=True)
+
             rewards_history.append(reward)
             episode_reward += reward
+            episode_begin = False
             if done:
                 break
 
@@ -118,11 +148,11 @@ while True:  # Run until solved
 
     # Log details
     episode_count += 1
-    if episode_count % 3 == 0:
+    if episode_count % 5 == 0:
         template = "running reward: {:.2f} at episode {}"
         print(template.format(running_reward, episode_count), flush=True)
     
-    if episode_count % 20 == 3:
+    if episode_count % 50 == 3:
         print("save model {}!".format(episode_count), flush=True)
         model.save("./models/model.{}.h5".format(episode_count))
     if running_reward > 195:  # Condition to consider the task solved

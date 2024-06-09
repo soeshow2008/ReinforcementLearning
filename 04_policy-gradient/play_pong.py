@@ -14,6 +14,7 @@ import time
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
+np.set_printoptions(threshold=sys.maxsize);
 # Configuration parameters for the whole setup
 seed = 42
 gamma = 0.99  # Discount factor for past rewards
@@ -23,21 +24,38 @@ env = gym.make("ALE/Pong-v5", render_mode="human")
 env.seed(seed)
 eps = np.finfo(np.float32).eps.item()  # Smallest number such that 1.0 + eps != 1.0
 
+def preprocess(image):
+    image = image[35:195]   
+    image = image[::2,::2,0]
+    image[image==144] = 0
+    image[image==109] = 0
+    image[image!=0] = 1.0
+    #return image
+    return image.astype('float').ravel()
+
 # Actor-Critiic, TD
-inputs = layers.Input(shape=env.observation_space.shape) 
-common = Conv2D(32, (3, 3), activation='relu')(inputs)
-common = MaxPooling2D(pool_size=(2, 2))(common)
-common = Flatten()(common);
+# cnn
+#inputs = layers.Input(shape=(80, 80, 1)) 
+#common = Conv2D(4, (3, 3), activation='relu')(inputs)
+#common = MaxPooling2D(pool_size=(2, 2))(common)
+#common = Conv2D(8, (3, 3), activation='relu')(common)
+#common = MaxPooling2D(pool_size=(2, 2))(common)
+#common = Flatten()(common);
+
+# liner
+inputs = layers.Input(shape=(80*80,))
+common = layers.Dense(128, activation="relu")(inputs)
+common = layers.Dense(64, activation="relu")(common)
+
 action = layers.Dense(env.action_space.n, activation="softmax")(common)
 critic = layers.Dense(1)(common)
 
 model = keras.Model(inputs=inputs, outputs=[action, critic])
-
-model = keras.Model(inputs=inputs, outputs=[action, critic])
 model = load_model("./models/model.{}.h5".format(sys.argv[1]))
-#
+print(model.summary())
+
 state, _ = env.reset()
-state = state / 255.0
+state = preprocess(state)
 while True:  # Run until solved
     state = ops.convert_to_tensor(state)
     state = ops.expand_dims(state, 0)
@@ -48,10 +66,10 @@ while True:  # Run until solved
 
     # Sample action from action probability distribution
     action = np.random.choice(env.action_space.n, p=np.squeeze(action_probs))
-    print(action_probs, action)
+    print(action, action_probs)
 
     # Apply the sampled action in our environment
     state, reward, done, _, _ = env.step(action)
-    state = state / 255.0
+    state = preprocess(state)
     if done:
         break
