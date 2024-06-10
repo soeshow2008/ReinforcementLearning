@@ -45,13 +45,11 @@ def preprocess(image):
 # liner
 inputs = layers.Input(shape=(80*80,))
 common = layers.Dense(128, activation="relu")(inputs)
-action = layers.Dense(64, activation="relu")(common)
-action = layers.Dense(env.action_space.n, activation="softmax")(action)
-critic = layers.Dense(64, activation="relu")(common)
-critic = layers.Dense(1)(critic)
-
+common = layers.Dense(64, activation="relu")(common)
+action = layers.Dense(env.action_space.n, activation="softmax")(common)
+critic = layers.Dense(1)(common)
 model = keras.Model(inputs=inputs, outputs=[action, critic])
-#model = load_model("./models/model.base.h5")
+model = load_model("./models/model.base.h5")
 #model = load_model("./models/model.{}.h5".format(sys.argv[1]))
 # Train
 optimizer = keras.optimizers.Adam(learning_rate=0.01)
