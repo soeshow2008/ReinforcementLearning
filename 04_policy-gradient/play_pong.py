@@ -45,10 +45,10 @@ def preprocess(image):
 # liner
 inputs = layers.Input(shape=(80*80,))
 common = layers.Dense(128, activation="relu")(inputs)
-common = layers.Dense(64, activation="relu")(common)
-
-action = layers.Dense(env.action_space.n, activation="softmax")(common)
-critic = layers.Dense(1)(common)
+action = layers.Dense(64, activation="relu")(common)
+action = layers.Dense(env.action_space.n, activation="softmax")(action)
+critic = layers.Dense(64, activation="relu")(common)
+critic = layers.Dense(1)(critic)
 
 model = keras.Model(inputs=inputs, outputs=[action, critic])
 model = load_model("./models/model.{}.h5".format(sys.argv[1]))
@@ -71,5 +71,6 @@ while True:  # Run until solved
     # Apply the sampled action in our environment
     state, reward, done, _, _ = env.step(action)
     state = preprocess(state)
+
     if done:
         break
