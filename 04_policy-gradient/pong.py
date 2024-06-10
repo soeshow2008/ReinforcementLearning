@@ -51,7 +51,7 @@ action = layers.Dense(env.action_space.n, activation="softmax")(common)
 critic = layers.Dense(1)(common)
 
 model = keras.Model(inputs=inputs, outputs=[action, critic])
-#model = load_model("./models/model.{}.h5".format(sys.argv[1]))
+model = load_model("./models/model.base.h5")
 # Train
 optimizer = keras.optimizers.Adam(learning_rate=0.01)
 huber_loss = keras.losses.Huber()
@@ -90,8 +90,6 @@ while True:  # Run until solved
             # Apply the sampled action in our environment
             state, reward, done, _, _ = env.step(action)
             state = preprocess(state)
-            if reward != 0:
-                print("reward", reward, done, flush=True)
 
             rewards_history.append(reward)
             episode_reward += reward
